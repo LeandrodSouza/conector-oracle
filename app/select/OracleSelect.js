@@ -1,14 +1,11 @@
-const oracledb = require('oracledb');
-const CustomError = require('../error/CustomError');
-
 class OracleSelect {
   constructor(tableName, columns = ['*']) {
     this.tableName = tableName;
     this.columns = columns;
     this.whereClause = null;
     this.orderByClause = null;
+    this.rowNumClause = null;
     this.limitClause = null;
-    this.offsetClause = null;
     this.cache = null;
   }
 
@@ -22,13 +19,16 @@ class OracleSelect {
     return this;
   }
 
-  limit(limit) {
-    this.limitClause = `FETCH FIRST ${limit} ROWS ONLY`;
+  rowNum(rowNum) {
+    if (rowNum < 0) {
+      throw new Error('Invalid row number');
+    }
+    this.rowNumClause = `AND ROWNUM >= ${rowNum + 1}`;
     return this;
   }
 
-  offset(offset) {
-    this.offsetClause = `OFFSET ${offset} ROWS`;
+  limit(limit) {
+    this.limitClause = `FETCH FIRST ${limit} ROWS ONLY`;
     return this;
   }
 
@@ -51,7 +51,7 @@ class OracleSelect {
         connectString: ORACLE_DB_CONNECTION_STRING
       });
 
-      const query = `SELECT ${this.columns.join(', ')} FROM ${this.tableName} ${this.whereClause || ''} ${this.orderByClause || ''} ${this.limitClause || ''} ${this.offsetClause || ''}`;
+      const query = `SELECT ${this.columns.join(', ')} FROM ${this.tableName} ${this.whereClause || ''} ${this.orderByClause || ''} ${this.rowNumClause || ''} ${this.limitClause || ''}`;
       const result = await conn.execute(query);
 
       if (this.cache) {
@@ -82,7 +82,7 @@ class OracleSelect {
   }
 
   getCacheKey() {
-    return this.cacheKeyGenerator(this.tableName, this.columns, this.whereClause, this.orderByClause, this.limitClause, this.offsetClause);
+    return this.cacheKeyGenerator(this.tableName, this.columns, this.whereClause, this.orderByClause, this.rowNumClause, this.limitClause);
   }
 }
 
