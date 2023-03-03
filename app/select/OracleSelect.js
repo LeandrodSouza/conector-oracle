@@ -1,3 +1,6 @@
+const oracledb = require('oracledb');
+const CustomError = require('../error/CustomError');
+
 class OracleSelect {
   constructor(tableName, columns = ['*']) {
     this.tableName = tableName;
